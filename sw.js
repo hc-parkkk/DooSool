@@ -46,19 +46,40 @@ self.addEventListener('fetch', event => {
 
 // 푸시 알림 수신
 self.addEventListener('push', event => {
-  const options = {
-    body: event.data ? event.data.text() : '오늘의 생일자가 있습니다!',
+  let data = {
+    title: '🎂 두술 생일 알림',
+    body: '오늘의 생일자가 있습니다!',
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎂</text></svg>',
-    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎂</text></svg>',
+    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎂</text></svg>'
+  };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
+      url: '/'
+    },
+    actions: [
+      {
+        action: 'open',
+        title: '확인하기'
+      }
+    ]
   };
 
   event.waitUntil(
-    self.registration.showNotification('🎉 두술 생일 알림', options)
+    self.registration.showNotification(data.title, options)
   );
 });
 
