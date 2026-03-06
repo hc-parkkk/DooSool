@@ -226,16 +226,6 @@
 
         <!-- 방출 예정 탭 -->
         <div id="excludeTab" class="tab-content" style="display: none;">
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
-                    🚫 제외할 명단 (쉼표로 구분)
-                </label>
-                <input type="text" id="excludeNames" placeholder="예: 신예슬, 이태욱, 최연주" 
-                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
-                <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                    출석체크 시 제외되는 사람들의 이름을 입력하세요
-                </div>
-            </div>
             <button id="checkExcludeBtn" class="btn">방출 예정자 확인</button>
             <div id="excludeList" class="birthday-list"></div>
         </div>
@@ -303,6 +293,14 @@
                     <input type="number" id="excludeMinute" min="0" max="59" value="0" 
                            style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
                     <button id="setExcludeBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 14px;">제외할 명단 (쉼표로 구분):</span>
+                    <input type="text" id="excludeNamesSettings" value="신예슬, 이태욱, 최연주, 전해인, 김현우, 고준호" placeholder="예: 신예슬, 이태욱"
+                           style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
+                    <div style="font-size: 11px; color: #999; margin-top: 3px;">
+                        출석체크 시 제외되는 사람들의 이름
+                    </div>
                 </div>
                 <div style="font-size: 12px; color: #666;">
                     현재: <span id="currentExcludeTime" style="font-weight: bold;">매월 1,10,20,말일 09:00</span>
@@ -643,18 +641,9 @@
             btn.disabled = true;
             btn.textContent = '확인 중...';
             
-            // 제외 명단 가져오기
-            const excludeNamesInput = document.getElementById('excludeNames').value;
-            const excludeNamesList = excludeNamesInput.split(',').map(name => name.trim()).filter(name => name);
-            
             try {
-                const response = await fetch(window.location.origin + '/api/exclude-members', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ exclude_names: excludeNamesList })
-                });
+                // 저장된 설정을 사용하므로 제외 명단을 별도로 전달하지 않음
+                const response = await fetch(window.location.origin + '/api/exclude-members');
                 const result = await response.json();
                 
                 const listEl = document.getElementById('excludeList');
@@ -765,8 +754,8 @@
                 return trimmed === 'last' ? 'last' : parseInt(trimmed);
             });
             
-            // 제외 명단 가져오기
-            const excludeNamesInput = document.getElementById('excludeNames').value;
+            // 제외 명단 가져오기 (설정 섹션에서)
+            const excludeNamesInput = document.getElementById('excludeNamesSettings').value;
             const excludeNamesList = excludeNamesInput.split(',').map(name => name.trim()).filter(name => name);
             
             if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
@@ -875,7 +864,7 @@
                     
                     // 제외 명단 설정
                     if (settings.exclude.exclude_names) {
-                        document.getElementById('excludeNames').value = settings.exclude.exclude_names.join(', ');
+                        document.getElementById('excludeNamesSettings').value = settings.exclude.exclude_names.join(', ');
                     }
                 }
             } catch (error) {

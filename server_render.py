@@ -128,7 +128,7 @@ def check_nonpayment():
         return None
 
 # 방출 예정자 확인 함수
-def check_exclude_members(exclude_names=None):
+def check_exclude_members():
     try:
         sheet = client.open_by_key(spreadsheet_id).worksheet("출석체크")
         all_data = sheet.get_all_values()
@@ -148,9 +148,8 @@ def check_exclude_members(exclude_names=None):
         current_month_str = f"{current_month}월"
         previous_month_str = f"{previous_month}월"
         
-        # 제외할 이름 목록 (파라미터가 없으면 기본값 사용)
-        if exclude_names is None:
-            exclude_names = notification_settings['exclude'].get('exclude_names', [])
+        # 제외할 이름 목록 (저장된 설정에서 가져오기)
+        exclude_names = notification_settings['exclude'].get('exclude_names', [])
         
         # 이번 달과 지난 달 모두 'O' 없고, 신입 아닌 사람
         absent_people = df_filtered[
@@ -396,17 +395,11 @@ def get_nonpayment():
         }), 500
 
 # 방출 예정자 조회 API
-@app.route('/api/exclude-members', methods=['GET', 'POST'])
+@app.route('/api/exclude-members', methods=['GET'])
 def get_exclude_members():
     try:
-        exclude_names = None
-        
-        # POST 요청인 경우 제외 명단 받기
-        if request.method == 'POST':
-            body = request.json
-            exclude_names = body.get('exclude_names', [])
-        
-        data = check_exclude_members(exclude_names)
+        # 저장된 설정의 제외 명단 사용
+        data = check_exclude_members()
         if data:
             return jsonify({
                 "success": True,
