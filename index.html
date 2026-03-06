@@ -106,7 +106,7 @@
         }
 
         .birthday-card {
-            background: linear-gradient(135deg, #ffc9c9 0%, #ff8787 100%);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 15px;
@@ -683,7 +683,6 @@
                     if (data.previous_names && data.previous_names.length > 0) {
                         const card = document.createElement('div');
                         card.className = 'birthday-card';
-                        card.style.background = 'linear-gradient(135deg, #96f2d7 0%, #63e6be 100%)';
                         card.innerHTML = `
                             <div class="name">💰 ${data.previous_month} 회비 미납</div>
                             <div class="message">${data.previous_names.join(', ')}</div>
@@ -694,7 +693,6 @@
                     if (data.current_names && data.current_names.length > 0) {
                         const card = document.createElement('div');
                         card.className = 'birthday-card';
-                        card.style.background = 'linear-gradient(135deg, #63e6be 0%, #20c997 100%)';
                         card.innerHTML = `
                             <div class="name">💰 ${data.current_month} 회비 미납</div>
                             <div class="message">${data.current_names.join(', ')}</div>
@@ -736,7 +734,6 @@
                 if (result.success && result.data && result.data.names && result.data.names.length > 0) {
                     const card = document.createElement('div');
                     card.className = 'birthday-card';
-                    card.style.background = 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)';
                     card.innerHTML = `
                         <div class="name">⚠️ ${result.data.month} 방출 예정</div>
                         <div class="message">${result.data.names.join('<br>')}</div>
