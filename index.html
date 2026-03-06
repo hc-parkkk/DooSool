@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4CAF50">
-    <title>두술 생일 알림</title>
+    <title>두리술쩍 운영진 알림 도우미</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+    <link rel="icon" href="KakaoTalk_20260306_132534726.png">
     <style>
         * {
             margin: 0;
@@ -16,12 +16,25 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: url('KakaoTalk_20260306_132749888.jpg') center center / 70% no-repeat fixed;
+            background-color: #f5f5f5;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(2px);
+            z-index: -1;
         }
 
         .container {
@@ -57,8 +70,13 @@
         }
 
         .header .emoji {
-            font-size: 50px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .header .emoji img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
         }
 
         .status {
@@ -191,8 +209,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="emoji">🎂</div>
-            <h1>두술 생일 알림</h1>
+            <div class="emoji">
+                <img src="KakaoTalk_20260306_132534726.png" alt="두리술쩍 로고">
+            </div>
+            <h1>두리술쩍 운영진 알림 도우미</h1>
         </div>
 
         <div id="status" class="status loading">

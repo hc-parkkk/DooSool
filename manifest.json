@@ -1,23 +1,23 @@
 {
-  "name": "두술 생일 알림",
-  "short_name": "생일알림",
-  "description": "두리술쩍 멋쟁이 운영진 생일 알림 앱",
+  "name": "두리술쩍 운영진 알림 도우미",
+  "short_name": "두리술쩍",
+  "description": "두리술쩍 운영진 알림 도우미",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#667eea",
-  "theme_color": "#4CAF50",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>",
+      "src": "KakaoTalk_20260306_132534726.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>",
+      "src": "KakaoTalk_20260306_132534726.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
