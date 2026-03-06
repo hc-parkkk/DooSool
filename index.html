@@ -226,6 +226,16 @@
 
         <!-- 방출 예정 탭 -->
         <div id="excludeTab" class="tab-content" style="display: none;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
+                    🚫 제외할 명단 (쉼표로 구분)
+                </label>
+                <input type="text" id="excludeNames" placeholder="예: 신예슬, 이태욱, 최연주" 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    출석체크 시 제외되는 사람들의 이름을 입력하세요
+                </div>
+            </div>
             <button id="checkExcludeBtn" class="btn">방출 예정자 확인</button>
             <div id="excludeList" class="birthday-list"></div>
         </div>
@@ -303,24 +313,32 @@
 
             <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">🔔 즉시 테스트</div>
             
-            <div style="display: flex; gap: 5px;">
-                <button id="testBirthdayBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); font-size: 14px; padding: 10px;">
-                    🎂 생일
+            <div id="birthdayTest" style="margin-bottom: 10px;">
+                <button id="testBirthdayBtn" class="btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); font-size: 14px; padding: 10px;">
+                    🎂 생일 알림 테스트
                 </button>
-                <button id="testNonpaymentBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); font-size: 14px; padding: 10px;">
-                    💰 회비
+            </div>
+
+            <div id="nonpaymentTest" style="margin-bottom: 10px; display: none;">
+                <button id="testNonpaymentBtn" class="btn" style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); font-size: 14px; padding: 10px;">
+                    💰 회비 알림 테스트
                 </button>
-                <button id="testExcludeBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #ff7675 0%, #d63031 100%); font-size: 14px; padding: 10px;">
-                    ⚠️ 방출
+            </div>
+
+            <div id="excludeTest" style="display: none;">
+                <button id="testExcludeBtn" class="btn" style="background: linear-gradient(135deg, #ff7675 0%, #d63031 100%); font-size: 14px; padding: 10px;">
+                    ⚠️ 방출 알림 테스트
                 </button>
             </div>
         </div>
 
         <div class="info">
-            💡 자동 알림 일정<br>
-            🎂 생일: 매일 설정한 시간<br>
-            💰 회비: 매월 1, 5, 10일 오전 9시<br>
-            ⚠️ 방출: 매월 1, 10, 20, 말일 오전 9시
+            💡 <strong>자동 알림 활용 방법</strong><br><br>
+            <div style="text-align: left; font-size: 13px; line-height: 1.6;">
+                <strong>🎂 생일 알림:</strong> 매일 설정한 시간에 자동으로 생일자를 확인하여 알림을 보냅니다.<br><br>
+                <strong>💰 회비 알림:</strong> 매월 설정한 날짜(예: 1일, 5일, 10일)에 회비 미납자를 확인하여 알림을 보냅니다. 독촉이 필요한 날짜를 자유롭게 설정하세요.<br><br>
+                <strong>⚠️ 방출 알림:</strong> 매월 설정한 날짜(예: 1일, 10일, 20일, 말일)에 연속 불참자를 확인하여 알림을 보냅니다. 경고가 필요한 시점을 설정하세요.
+            </div>
         </div>
 
         <div class="footer">
@@ -529,6 +547,11 @@
                 // 설정 섹션 숨기기
                 document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
                 
+                // 테스트 버튼 섹션 숨기기
+                document.getElementById('birthdayTest').style.display = 'none';
+                document.getElementById('nonpaymentTest').style.display = 'none';
+                document.getElementById('excludeTest').style.display = 'none';
+                
                 // 선택한 탭 활성화
                 btn.style.background = '#667eea';
                 btn.style.color = 'white';
@@ -539,6 +562,9 @@
                 
                 // 해당 탭의 설정 섹션 표시
                 document.getElementById(tab + 'Settings').style.display = 'block';
+                
+                // 해당 탭의 테스트 버튼 표시
+                document.getElementById(tab + 'Test').style.display = 'block';
             });
         });
 
@@ -617,8 +643,18 @@
             btn.disabled = true;
             btn.textContent = '확인 중...';
             
+            // 제외 명단 가져오기
+            const excludeNamesInput = document.getElementById('excludeNames').value;
+            const excludeNamesList = excludeNamesInput.split(',').map(name => name.trim()).filter(name => name);
+            
             try {
-                const response = await fetch(window.location.origin + '/api/exclude-members');
+                const response = await fetch(window.location.origin + '/api/exclude-members', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ exclude_names: excludeNamesList })
+                });
                 const result = await response.json();
                 
                 const listEl = document.getElementById('excludeList');
@@ -729,6 +765,10 @@
                 return trimmed === 'last' ? 'last' : parseInt(trimmed);
             });
             
+            // 제외 명단 가져오기
+            const excludeNamesInput = document.getElementById('excludeNames').value;
+            const excludeNamesList = excludeNamesInput.split(',').map(name => name.trim()).filter(name => name);
+            
             if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
                 alert('올바른 시간을 입력하세요');
                 return;
@@ -740,7 +780,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ type: 'exclude', days, hour, minute })
+                    body: JSON.stringify({ type: 'exclude', days, hour, minute, exclude_names: excludeNamesList })
                 });
                 
                 const data = await response.json();
@@ -832,6 +872,11 @@
                     document.getElementById('excludeMinute').value = settings.exclude.minute;
                     document.getElementById('currentExcludeTime').textContent = 
                         `매월 ${settings.exclude.days.join(',')}일 ${String(settings.exclude.hour).padStart(2, '0')}:${String(settings.exclude.minute).padStart(2, '0')}`;
+                    
+                    // 제외 명단 설정
+                    if (settings.exclude.exclude_names) {
+                        document.getElementById('excludeNames').value = settings.exclude.exclude_names.join(', ');
+                    }
                 }
             } catch (error) {
                 console.error('알림 설정 불러오기 실패:', error);

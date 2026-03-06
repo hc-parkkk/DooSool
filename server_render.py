@@ -86,10 +86,10 @@ def check_nonpayment():
         all_data = sheet.get_all_values()
         
         # 5행(인덱스 4)이 실제 헤더
-        # B열부터 D열(1~3)과 34번째 열부터 46번째 열(33~45) 선택
+        # B~D열(1~3)과 AU~열(46~57) 선택 - 2026년 데이터
         df_filtered = pd.concat([
             pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 1:4],
-            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 33:46]
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 45:58]
         ], axis=1)
         
         # 현재 날짜 기준 이번 달과 지난 달
@@ -128,16 +128,16 @@ def check_nonpayment():
         return None
 
 # 방출 예정자 확인 함수
-def check_exclude_members():
+def check_exclude_members(exclude_names=None):
     try:
         sheet = client.open_by_key(spreadsheet_id).worksheet("출석체크")
         all_data = sheet.get_all_values()
         
         # 5행(인덱스 4)이 실제 헤더
-        # B열부터 F열(1~5)과 33번째 열부터 45번째 열(32~44) 선택
+        # B~F열(1~5)과 AU~열(46~57) 선택 - 2026년 데이터
         df_filtered = pd.concat([
             pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 1:6],
-            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 32:45]
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 45:58]
         ], axis=1)
         
         # 현재 날짜 기준 이번 달과 지난 달
@@ -148,8 +148,9 @@ def check_exclude_members():
         current_month_str = f"{current_month}월"
         previous_month_str = f"{previous_month}월"
         
-        # 제외할 이름 목록
-        exclude_names = ['신예슬', '이태욱', '최연주', '전해인', '김현우', '고준호']
+        # 제외할 이름 목록 (파라미터가 없으면 기본값 사용)
+        if exclude_names is None:
+            exclude_names = notification_settings['exclude'].get('exclude_names', [])
         
         # 이번 달과 지난 달 모두 'O' 없고, 신입 아닌 사람
         absent_people = df_filtered[
@@ -250,7 +251,7 @@ def monthly_exclude_check():
 notification_settings = {
     'birthday': {'hour': 9, 'minute': 0},  # 생일: 매일 09:00
     'nonpayment': {'days': [1, 5, 10], 'hour': 9, 'minute': 0},  # 회비: 매월 1,5,10일 09:00
-    'exclude': {'days': [1, 10, 20, 'last'], 'hour': 9, 'minute': 0}  # 방출: 매월 1,10,20,말일 09:00
+    'exclude': {'days': [1, 10, 20, 'last'], 'hour': 9, 'minute': 0, 'exclude_names': ['신예슬', '이태욱', '최연주', '전해인', '김현우', '고준호']}  # 방출: 매월 1,10,20,말일 09:00
 }
 
 # 스케줄러 설정
@@ -395,10 +396,17 @@ def get_nonpayment():
         }), 500
 
 # 방출 예정자 조회 API
-@app.route('/api/exclude-members', methods=['GET'])
+@app.route('/api/exclude-members', methods=['GET', 'POST'])
 def get_exclude_members():
     try:
-        data = check_exclude_members()
+        exclude_names = None
+        
+        # POST 요청인 경우 제외 명단 받기
+        if request.method == 'POST':
+            body = request.json
+            exclude_names = body.get('exclude_names', [])
+        
+        data = check_exclude_members(exclude_names)
         if data:
             return jsonify({
                 "success": True,
@@ -464,6 +472,11 @@ def set_notification_settings():
         notification_settings[notification_type]['days'] = days
         notification_settings[notification_type]['hour'] = hour
         notification_settings[notification_type]['minute'] = minute
+        
+        # 방출 예정의 경우 제외 명단도 저장
+        if notification_type == 'exclude':
+            exclude_names = data.get('exclude_names', [])
+            notification_settings[notification_type]['exclude_names'] = exclude_names
         
         update_schedule()
         
