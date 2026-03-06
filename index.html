@@ -203,8 +203,30 @@
 
         <div id="birthdayList" class="birthday-list"></div>
 
+        <!-- 알림 설정 -->
+        <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 10px;">
+            <h3 style="margin-bottom: 15px; font-size: 18px; color: #333;">⏰ 알림 시간 설정</h3>
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                <input type="number" id="hourInput" min="0" max="23" value="9" 
+                       style="width: 60px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; text-align: center;">
+                <span style="font-size: 18px; font-weight: bold;">:</span>
+                <input type="number" id="minuteInput" min="0" max="59" value="0" 
+                       style="width: 60px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; text-align: center;">
+                <button id="setTimeBtn" class="btn" style="width: auto; padding: 10px 20px; margin: 0;">설정</button>
+            </div>
+            
+            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                현재 설정: <span id="currentTime" style="font-weight: bold; color: #667eea;">09:00</span>
+            </div>
+            
+            <button id="testBtn" class="btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                🔔 지금 바로 테스트
+            </button>
+        </div>
+
         <div class="info">
-            💡 이 앱은 매일 자동으로 생일을 확인하고 알림을 보냅니다.
+            💡 매일 설정한 시간에 자동으로 생일을 확인하고 알림을 보냅니다.
         </div>
 
         <div class="footer">
@@ -413,6 +435,83 @@
             btn.disabled = false;
         });
 
+        // 알림 시간 설정
+        document.getElementById('setTimeBtn').addEventListener('click', async () => {
+            const hour = parseInt(document.getElementById('hourInput').value);
+            const minute = parseInt(document.getElementById('minuteInput').value);
+            
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                alert('올바른 시간을 입력하세요 (시: 0-23, 분: 0-59)');
+                return;
+            }
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/set-notification-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ hour, minute })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('currentTime').textContent = 
+                        `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    updateStatus('✅ ' + data.message, 'success');
+                } else {
+                    updateStatus('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 시간 설정 실패', 'error');
+            }
+        });
+
+        // 테스트 알림 버튼
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            btn.textContent = '전송 중...';
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/test-notification', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStatus('✅ ' + data.message, 'success');
+                    alert('푸시 알림이 전송되었습니다!\n알림이 오지 않으면 알림 권한을 확인하세요.');
+                } else {
+                    updateStatus('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 테스트 알림 전송 실패', 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🔔 지금 바로 테스트';
+        });
+
+        // 현재 알림 시간 불러오기
+        async function loadNotificationTime() {
+            try {
+                const response = await fetch(window.location.origin + '/api/get-notification-time');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('hourInput').value = data.hour;
+                    document.getElementById('minuteInput').value = data.minute;
+                    document.getElementById('currentTime').textContent = 
+                        `${String(data.hour).padStart(2, '0')}:${String(data.minute).padStart(2, '0')}`;
+                }
+            } catch (error) {
+                console.error('알림 시간 불러오기 실패:', error);
+            }
+        }
+
         // 초기화
         async function init() {
             notificationPermission = await requestNotificationPermission();
@@ -420,19 +519,14 @@
             const btn = document.getElementById('checkBtn');
             btn.disabled = false;
             
+            // 알림 시간 불러오기
+            await loadNotificationTime();
+            
             // 자동으로 생일 확인
             const birthdayPeople = await fetchBirthdayData();
             if (birthdayPeople !== null) {
                 displayBirthdayCards(birthdayPeople);
             }
-            
-            // 매일 자동 확인 (24시간마다)
-            setInterval(async () => {
-                const birthdayPeople = await fetchBirthdayData();
-                if (birthdayPeople !== null && birthdayPeople.length > 0) {
-                    displayBirthdayCards(birthdayPeople);
-                }
-            }, 24 * 60 * 60 * 1000);
         }
 
         // 페이지 로드 시 초기화

@@ -123,15 +123,31 @@ def daily_birthday_check():
     else:
         print("오늘은 생일인 분이 없습니다.")
 
+# 알림 시간 설정 (기본값: 오전 9시)
+notification_hour = 9
+notification_minute = 0
+
 # 스케줄러 설정
 scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=daily_birthday_check,
-    trigger="cron",
-    hour=9,  # 매일 오전 9시
-    minute=0,
-    timezone="Asia/Seoul"
-)
+
+def update_schedule():
+    """스케줄 업데이트"""
+    global scheduler
+    # 기존 작업 제거
+    scheduler.remove_all_jobs()
+    # 새 작업 추가
+    scheduler.add_job(
+        func=daily_birthday_check,
+        trigger="cron",
+        hour=notification_hour,
+        minute=notification_minute,
+        timezone="Asia/Seoul",
+        id="birthday_check"
+    )
+    print(f"⏰ 알림 시간 업데이트: {notification_hour:02d}:{notification_minute:02d}")
+
+# 초기 스케줄 설정
+update_schedule()
 scheduler.start()
 
 # 앱 종료 시 스케줄러 정리
@@ -194,15 +210,67 @@ def get_birthdays():
             "error": str(e)
         }), 500
 
-# 수동 알림 테스트
+# 알림 시간 설정
+@app.route('/api/set-notification-time', methods=['POST'])
+def set_notification_time():
+    global notification_hour, notification_minute
+    
+    data = request.json
+    hour = data.get('hour', 9)
+    minute = data.get('minute', 0)
+    
+    # 유효성 검사
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return jsonify({"success": False, "message": "잘못된 시간 형식입니다"}), 400
+    
+    notification_hour = hour
+    notification_minute = minute
+    
+    # 스케줄 업데이트
+    update_schedule()
+    
+    return jsonify({
+        "success": True,
+        "message": f"알림 시간이 {hour:02d}:{minute:02d}로 설정되었습니다",
+        "hour": hour,
+        "minute": minute
+    })
+
+# 현재 알림 시간 조회
+@app.route('/api/get-notification-time', methods=['GET'])
+def get_notification_time():
+    return jsonify({
+        "success": True,
+        "hour": notification_hour,
+        "minute": notification_minute
+    })
+
+# 수동 알림 테스트 (즉시 전송)
 @app.route('/api/test-notification', methods=['POST'])
 def test_notification():
     names = check_birthdays()
     if names:
         send_push_notifications(names)
-        return jsonify({"success": True, "message": f"알림 전송: {names}"})
+        return jsonify({"success": True, "message": f"알림 전송 완료: {', '.join(names)}님"})
     else:
-        return jsonify({"success": True, "message": "오늘은 생일자가 없습니다"})
+        # 생일자가 없어도 테스트 알림 전송
+        test_message = [{"title": "🎂 테스트 알림", "body": "푸시 알림이 정상 작동합니다!"}]
+        for subscription in subscriptions:
+            try:
+                webpush(
+                    subscription_info=subscription,
+                    data=json.dumps({
+                        "title": "🎂 테스트 알림",
+                        "body": "푸시 알림이 정상 작동합니다!",
+                        "icon": "/icon.png"
+                    }),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS
+                )
+            except Exception as e:
+                print(f"테스트 알림 전송 실패: {e}")
+        
+        return jsonify({"success": True, "message": "테스트 알림 전송 완료 (오늘은 생일자가 없습니다)"})
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
