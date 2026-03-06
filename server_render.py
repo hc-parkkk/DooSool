@@ -79,12 +79,90 @@ def check_birthdays():
         print(f"생일 확인 오류: {e}")
         return []
 
+# 회비 미납자 확인 함수
+def check_nonpayment():
+    try:
+        sheet = client.open_by_key(spreadsheet_id).worksheet("회비")
+        all_data = sheet.get_all_values()
+        df = pd.DataFrame(all_data[1:], columns=all_data[0])
+        
+        # B열부터 D열(1~3)과 34번째 열부터 46번째 열까지 선택
+        df_filtered = pd.concat([df.iloc[3:, 1:4], df.iloc[3:, 34:46]], axis=1)
+        df_filtered.columns = df_filtered.iloc[0]
+        df_filtered = df_filtered[1:].reset_index(drop=True)
+        
+        # 현재 날짜 기준 이번 달과 지난 달
+        today = datetime.now()
+        current_month = today.month
+        previous_month = current_month - 1 if current_month > 1 else 12
+        
+        current_month_str = f"{current_month}월"
+        previous_month_str = f"{previous_month}월"
+        
+        # 이번 달과 지난 달 미납자
+        current_absent = df_filtered[df_filtered[current_month_str] != 'O']
+        previous_absent = df_filtered[df_filtered[previous_month_str] != 'O']
+        
+        current_names = current_absent['이름'].tolist()
+        previous_names = previous_absent['이름'].tolist()
+        
+        return {
+            'current_month': current_month_str,
+            'previous_month': previous_month_str,
+            'current_names': current_names,
+            'previous_names': previous_names
+        }
+    except Exception as e:
+        print(f"회비 미납자 확인 오류: {e}")
+        return None
+
+# 방출 예정자 확인 함수
+def check_exclude_members():
+    try:
+        sheet = client.open_by_key(spreadsheet_id).worksheet("출석체크")
+        all_data = sheet.get_all_values()
+        df = pd.DataFrame(all_data[1:], columns=all_data[0])
+        
+        # B열부터 F열(1~5)과 33번째 열부터 45번째 열까지 선택
+        df_filtered = pd.concat([df.iloc[3:, 1:6], df.iloc[3:, 33:45]], axis=1)
+        df_filtered.columns = df_filtered.iloc[0]
+        df_filtered = df_filtered[1:].reset_index(drop=True)
+        
+        # 현재 날짜 기준 이번 달과 지난 달
+        today = datetime.now()
+        current_month = today.month
+        previous_month = current_month - 1 if current_month > 1 else 12
+        
+        current_month_str = f"{current_month}월"
+        previous_month_str = f"{previous_month}월"
+        
+        # 제외할 이름 목록
+        exclude_names = ['신예슬', '이태욱', '최연주', '전해인', '김현우', '고준호']
+        
+        # 이번 달과 지난 달 모두 'O' 없고, 신입 아닌 사람
+        absent_people = df_filtered[
+            (df_filtered[current_month_str] != 'O') & 
+            (df_filtered[previous_month_str] != 'O') &
+            (df_filtered[current_month_str] != '신입') &
+            (df_filtered[previous_month_str] != '신입') &
+            (~df_filtered['이름'].isin(exclude_names))
+        ]
+        
+        names = absent_people['이름'].tolist()
+        
+        return {
+            'month': current_month_str,
+            'names': names
+        }
+    except Exception as e:
+        print(f"방출 예정자 확인 오류: {e}")
+        return None
+
 # 푸시 알림 전송
-def send_push_notifications(names):
-    if not names or not VAPID_PRIVATE_KEY:
+def send_push_notifications(title, body):
+    if not VAPID_PRIVATE_KEY or not subscriptions:
+        print("VAPID 키가 없거나 구독자가 없습니다.")
         return
-    
-    message = f"🎉 오늘의 생일자: {', '.join(names)}님 🎂"
     
     dead_subscriptions = []
     
@@ -93,8 +171,8 @@ def send_push_notifications(names):
             webpush(
                 subscription_info=subscription,
                 data=json.dumps({
-                    "title": "🎂 두술 생일 알림",
-                    "body": message,
+                    "title": title,
+                    "body": body,
                     "icon": "/icon.png",
                     "badge": "/badge.png"
                 }),
@@ -119,9 +197,38 @@ def daily_birthday_check():
     
     if names:
         print(f"오늘의 생일자: {names}")
-        send_push_notifications(names)
+        message = f"🎉 오늘의 생일자: {', '.join(names)}님 🎂"
+        send_push_notifications("🎂 두술 생일 알림", message)
     else:
         print("오늘은 생일인 분이 없습니다.")
+
+# 회비 미납자 자동 확인 작업
+def monthly_nonpayment_check():
+    print(f"[{datetime.now()}] 회비 미납자 확인 시작...")
+    data = check_nonpayment()
+    
+    if data and (data['current_names'] or data['previous_names']):
+        prev_msg = f"📢 {data['previous_month']} 회비 미납: {', '.join(data['previous_names'])}" if data['previous_names'] else ""
+        curr_msg = f"📢 {data['current_month']} 회비 미납: {', '.join(data['current_names'])}" if data['current_names'] else ""
+        
+        message = "\n\n".join(filter(None, [prev_msg, curr_msg]))
+        
+        print(f"회비 미납자: {message}")
+        send_push_notifications("💰 회비 미납 알림", message)
+    else:
+        print("회비 미납자가 없습니다.")
+
+# 방출 예정자 자동 확인 작업
+def monthly_exclude_check():
+    print(f"[{datetime.now()}] 방출 예정자 확인 시작...")
+    data = check_exclude_members()
+    
+    if data and data['names']:
+        message = f"📢 {data['month']} 방출 예정 명단:\n" + "\n".join(data['names'])
+        print(f"방출 예정자: {data['names']}")
+        send_push_notifications("⚠️ 방출 예정 알림", message)
+    else:
+        print("방출 예정자가 없습니다.")
 
 # 알림 시간 설정 (기본값: 오전 9시)
 notification_hour = 9
@@ -135,7 +242,8 @@ def update_schedule():
     global scheduler
     # 기존 작업 제거
     scheduler.remove_all_jobs()
-    # 새 작업 추가
+    
+    # 1. 생일 알림 (매일 설정한 시간)
     scheduler.add_job(
         func=daily_birthday_check,
         trigger="cron",
@@ -144,7 +252,32 @@ def update_schedule():
         timezone="Asia/Seoul",
         id="birthday_check"
     )
-    print(f"⏰ 알림 시간 업데이트: {notification_hour:02d}:{notification_minute:02d}")
+    
+    # 2. 회비 미납자 알림 (매월 1일, 5일, 10일 오전 9시)
+    scheduler.add_job(
+        func=monthly_nonpayment_check,
+        trigger="cron",
+        day="1,5,10",
+        hour=9,
+        minute=0,
+        timezone="Asia/Seoul",
+        id="nonpayment_check"
+    )
+    
+    # 3. 방출 예정자 알림 (매월 1일, 10일, 20일, 말일 오전 9시)
+    scheduler.add_job(
+        func=monthly_exclude_check,
+        trigger="cron",
+        day="1,10,20,last",
+        hour=9,
+        minute=0,
+        timezone="Asia/Seoul",
+        id="exclude_check"
+    )
+    
+    print(f"⏰ 생일 알림: 매일 {notification_hour:02d}:{notification_minute:02d}")
+    print(f"💰 회비 미납 알림: 매월 1, 5, 10일 09:00")
+    print(f"⚠️  방출 예정 알림: 매월 1, 10, 20, 말일 09:00")
 
 # 초기 스케줄 설정
 update_schedule()
@@ -210,6 +343,48 @@ def get_birthdays():
             "error": str(e)
         }), 500
 
+# 회비 미납자 조회 API
+@app.route('/api/nonpayment', methods=['GET'])
+def get_nonpayment():
+    try:
+        data = check_nonpayment()
+        if data:
+            return jsonify({
+                "success": True,
+                "data": data
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "데이터를 가져올 수 없습니다"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# 방출 예정자 조회 API
+@app.route('/api/exclude-members', methods=['GET'])
+def get_exclude_members():
+    try:
+        data = check_exclude_members()
+        if data:
+            return jsonify({
+                "success": True,
+                "data": data
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "데이터를 가져올 수 없습니다"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 # 알림 시간 설정
 @app.route('/api/set-notification-time', methods=['POST'])
 def set_notification_time():
@@ -248,29 +423,39 @@ def get_notification_time():
 # 수동 알림 테스트 (즉시 전송)
 @app.route('/api/test-notification', methods=['POST'])
 def test_notification():
-    names = check_birthdays()
-    if names:
-        send_push_notifications(names)
-        return jsonify({"success": True, "message": f"알림 전송 완료: {', '.join(names)}님"})
-    else:
-        # 생일자가 없어도 테스트 알림 전송
-        test_message = [{"title": "🎂 테스트 알림", "body": "푸시 알림이 정상 작동합니다!"}]
-        for subscription in subscriptions:
-            try:
-                webpush(
-                    subscription_info=subscription,
-                    data=json.dumps({
-                        "title": "🎂 테스트 알림",
-                        "body": "푸시 알림이 정상 작동합니다!",
-                        "icon": "/icon.png"
-                    }),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims=VAPID_CLAIMS
-                )
-            except Exception as e:
-                print(f"테스트 알림 전송 실패: {e}")
-        
-        return jsonify({"success": True, "message": "테스트 알림 전송 완료 (오늘은 생일자가 없습니다)"})
+    notification_type = request.json.get('type', 'birthday') if request.json else 'birthday'
+    
+    if notification_type == 'birthday':
+        names = check_birthdays()
+        if names:
+            message = f"🎉 오늘의 생일자: {', '.join(names)}님 🎂"
+            send_push_notifications("🎂 생일 알림", message)
+            return jsonify({"success": True, "message": f"생일 알림 전송: {', '.join(names)}님"})
+        else:
+            send_push_notifications("🎂 테스트 알림", "푸시 알림이 정상 작동합니다!")
+            return jsonify({"success": True, "message": "테스트 알림 전송 완료"})
+    
+    elif notification_type == 'nonpayment':
+        data = check_nonpayment()
+        if data and (data['current_names'] or data['previous_names']):
+            prev_msg = f"📢 {data['previous_month']} 회비 미납: {', '.join(data['previous_names'])}" if data['previous_names'] else ""
+            curr_msg = f"📢 {data['current_month']} 회비 미납: {', '.join(data['current_names'])}" if data['current_names'] else ""
+            message = "\n\n".join(filter(None, [prev_msg, curr_msg]))
+            send_push_notifications("💰 회비 미납 알림", message)
+            return jsonify({"success": True, "message": "회비 미납 알림 전송 완료"})
+        else:
+            return jsonify({"success": True, "message": "회비 미납자가 없습니다"})
+    
+    elif notification_type == 'exclude':
+        data = check_exclude_members()
+        if data and data['names']:
+            message = f"📢 {data['month']} 방출 예정 명단:\n" + "\n".join(data['names'])
+            send_push_notifications("⚠️ 방출 예정 알림", message)
+            return jsonify({"success": True, "message": "방출 예정 알림 전송 완료"})
+        else:
+            return jsonify({"success": True, "message": "방출 예정자가 없습니다"})
+    
+    return jsonify({"success": False, "message": "잘못된 알림 타입입니다"}), 400
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

@@ -199,9 +199,36 @@
             알림 권한을 확인하는 중...
         </div>
 
-        <button id="checkBtn" class="btn" disabled>생일 확인하기</button>
+        <!-- 탭 메뉴 -->
+        <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+            <button class="tab-btn active" data-tab="birthday" style="flex: 1; padding: 12px; border: none; background: #667eea; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                🎂 생일
+            </button>
+            <button class="tab-btn" data-tab="nonpayment" style="flex: 1; padding: 12px; border: none; background: #ddd; color: #666; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                💰 회비
+            </button>
+            <button class="tab-btn" data-tab="exclude" style="flex: 1; padding: 12px; border: none; background: #ddd; color: #666; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                ⚠️ 방출
+            </button>
+        </div>
 
-        <div id="birthdayList" class="birthday-list"></div>
+        <!-- 생일 탭 -->
+        <div id="birthdayTab" class="tab-content">
+            <button id="checkBtn" class="btn" disabled>생일 확인하기</button>
+            <div id="birthdayList" class="birthday-list"></div>
+        </div>
+
+        <!-- 회비 미납 탭 -->
+        <div id="nonpaymentTab" class="tab-content" style="display: none;">
+            <button id="checkNonpaymentBtn" class="btn">회비 미납자 확인</button>
+            <div id="nonpaymentList" class="birthday-list"></div>
+        </div>
+
+        <!-- 방출 예정 탭 -->
+        <div id="excludeTab" class="tab-content" style="display: none;">
+            <button id="checkExcludeBtn" class="btn">방출 예정자 확인</button>
+            <div id="excludeList" class="birthday-list"></div>
+        </div>
 
         <!-- 알림 설정 -->
         <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 10px;">
@@ -220,13 +247,24 @@
                 현재 설정: <span id="currentTime" style="font-weight: bold; color: #667eea;">09:00</span>
             </div>
             
-            <button id="testBtn" class="btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                🔔 지금 바로 테스트
-            </button>
+            <div style="display: flex; gap: 5px;">
+                <button id="testBirthdayBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); font-size: 14px; padding: 10px;">
+                    🎂 생일
+                </button>
+                <button id="testNonpaymentBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); font-size: 14px; padding: 10px;">
+                    💰 회비
+                </button>
+                <button id="testExcludeBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #ff7675 0%, #d63031 100%); font-size: 14px; padding: 10px;">
+                    ⚠️ 방출
+                </button>
+            </div>
         </div>
 
         <div class="info">
-            💡 매일 설정한 시간에 자동으로 생일을 확인하고 알림을 보냅니다.
+            💡 자동 알림 일정<br>
+            🎂 생일: 매일 설정한 시간<br>
+            💰 회비: 매월 1, 5, 10일 오전 9시<br>
+            ⚠️ 방출: 매월 1, 10, 20, 말일 오전 9시
         </div>
 
         <div class="footer">
@@ -421,7 +459,28 @@
             showBirthdayNotification(names);
         }
 
-        // 생일 확인 버튼 클릭
+        // 탭 전환
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 모든 탭 비활성화
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.style.background = '#ddd';
+                    b.style.color = '#666';
+                    b.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                
+                // 선택한 탭 활성화
+                btn.style.background = '#667eea';
+                btn.style.color = 'white';
+                btn.classList.add('active');
+                
+                const tab = btn.dataset.tab;
+                document.getElementById(tab + 'Tab').style.display = 'block';
+            });
+        });
+
+        // 생일 확인 버튼
         document.getElementById('checkBtn').addEventListener('click', async () => {
             const btn = document.getElementById('checkBtn');
             btn.disabled = true;
@@ -433,6 +492,96 @@
             }
             
             btn.disabled = false;
+        });
+
+        // 회비 미납자 확인 버튼
+        document.getElementById('checkNonpaymentBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('checkNonpaymentBtn');
+            btn.disabled = true;
+            btn.textContent = '확인 중...';
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/nonpayment');
+                const result = await response.json();
+                
+                const listEl = document.getElementById('nonpaymentList');
+                listEl.innerHTML = '';
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    if (data.previous_names && data.previous_names.length > 0) {
+                        const card = document.createElement('div');
+                        card.className = 'birthday-card';
+                        card.style.background = 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)';
+                        card.innerHTML = `
+                            <div class="name">💰 ${data.previous_month} 회비 미납</div>
+                            <div class="message">${data.previous_names.join(', ')}</div>
+                        `;
+                        listEl.appendChild(card);
+                    }
+                    
+                    if (data.current_names && data.current_names.length > 0) {
+                        const card = document.createElement('div');
+                        card.className = 'birthday-card';
+                        card.style.background = 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)';
+                        card.innerHTML = `
+                            <div class="name">💰 ${data.current_month} 회비 미납</div>
+                            <div class="message">${data.current_names.join(', ')}</div>
+                        `;
+                        listEl.appendChild(card);
+                    }
+                    
+                    if ((!data.previous_names || data.previous_names.length === 0) && 
+                        (!data.current_names || data.current_names.length === 0)) {
+                        listEl.innerHTML = '<div class="no-birthday">💰 회비 미납자가 없습니다!</div>';
+                    }
+                    
+                    updateStatus('✅ 회비 미납자 확인 완료', 'success');
+                } else {
+                    updateStatus('❌ 데이터를 가져올 수 없습니다', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 오류 발생', 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '회비 미납자 확인';
+        });
+
+        // 방출 예정자 확인 버튼
+        document.getElementById('checkExcludeBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('checkExcludeBtn');
+            btn.disabled = true;
+            btn.textContent = '확인 중...';
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/exclude-members');
+                const result = await response.json();
+                
+                const listEl = document.getElementById('excludeList');
+                listEl.innerHTML = '';
+                
+                if (result.success && result.data && result.data.names && result.data.names.length > 0) {
+                    const card = document.createElement('div');
+                    card.className = 'birthday-card';
+                    card.style.background = 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)';
+                    card.innerHTML = `
+                        <div class="name">⚠️ ${result.data.month} 방출 예정</div>
+                        <div class="message">${result.data.names.join('<br>')}</div>
+                    `;
+                    listEl.appendChild(card);
+                    updateStatus(`⚠️ 방출 예정자: ${result.data.names.length}명`, 'success');
+                } else {
+                    listEl.innerHTML = '<div class="no-birthday">✅ 방출 예정자가 없습니다!</div>';
+                    updateStatus('✅ 방출 예정자 없음', 'success');
+                }
+            } catch (error) {
+                updateStatus('❌ 오류 발생', 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '방출 예정자 확인';
         });
 
         // 알림 시간 설정
@@ -468,22 +617,42 @@
             }
         });
 
-        // 테스트 알림 버튼
-        document.getElementById('testBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('testBtn');
+        // 생일 테스트 알림
+        document.getElementById('testBirthdayBtn').addEventListener('click', async () => {
+            await sendTestNotification('birthday', 'testBirthdayBtn', '🎂 생일');
+        });
+
+        // 회비 테스트 알림
+        document.getElementById('testNonpaymentBtn').addEventListener('click', async () => {
+            await sendTestNotification('nonpayment', 'testNonpaymentBtn', '💰 회비');
+        });
+
+        // 방출 테스트 알림
+        document.getElementById('testExcludeBtn').addEventListener('click', async () => {
+            await sendTestNotification('exclude', 'testExcludeBtn', '⚠️ 방출');
+        });
+
+        // 테스트 알림 전송 함수
+        async function sendTestNotification(type, btnId, label) {
+            const btn = document.getElementById(btnId);
+            const originalText = btn.textContent;
             btn.disabled = true;
             btn.textContent = '전송 중...';
             
             try {
                 const response = await fetch(window.location.origin + '/api/test-notification', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: type })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
                     updateStatus('✅ ' + data.message, 'success');
-                    alert('푸시 알림이 전송되었습니다!\n알림이 오지 않으면 알림 권한을 확인하세요.');
+                    alert(`${label} 알림이 전송되었습니다!\n알림이 오지 않으면 알림 권한을 확인하세요.`);
                 } else {
                     updateStatus('❌ ' + data.message, 'error');
                 }
@@ -492,8 +661,8 @@
             }
             
             btn.disabled = false;
-            btn.textContent = '🔔 지금 바로 테스트';
-        });
+            btn.textContent = originalText;
+        }
 
         // 현재 알림 시간 불러오기
         async function loadNotificationTime() {
