@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <title>두술 생일 알림</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header .emoji {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status.loading {
+            color: #666;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .birthday-list {
+            margin-top: 20px;
+        }
+
+        .birthday-card {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .birthday-card .name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .birthday-card .message {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #1565c0;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-birthday {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">🎂</div>
+            <h1>두술 생일 알림</h1>
+        </div>
+
+        <div id="status" class="status loading">
+            알림 권한을 확인하는 중...
+        </div>
+
+        <button id="checkBtn" class="btn" disabled>생일 확인하기</button>
+
+        <div id="birthdayList" class="birthday-list"></div>
+
+        <div class="info">
+            💡 이 앱은 매일 자동으로 생일을 확인하고 알림을 보냅니다.
+        </div>
+
+        <div class="footer">
+            두리술쩍 멋쟁이 운영진 © 2026
+        </div>
+    </div>
+
+    <script>
+        // 백엔드 서버 주소 자동 감지
+        // 같은 서버에서 API 호출 (통합 서버 사용 시)
+        const API_URL = window.location.origin + '/api/birthdays';
+        
+        console.log('API URL:', API_URL);
+        
+        let notificationPermission = false;
+
+        // 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('Service Worker 등록 성공:', registration);
+                })
+                .catch(error => {
+                    console.log('Service Worker 등록 실패:', error);
+                });
+        }
+
+        // 알림 권한 요청
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                updateStatus('이 브라우저는 알림을 지원하지 않습니다.', 'error');
+                return false;
+            }
+
+            if (Notification.permission === 'granted') {
+                updateStatus('알림 권한이 허용되었습니다. ✅', 'success');
+                return true;
+            }
+
+            if (Notification.permission !== 'denied') {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    updateStatus('알림 권한이 허용되었습니다. ✅', 'success');
+                    return true;
+                }
+            }
+
+            updateStatus('알림 권한이 거부되었습니다. 설정에서 허용해주세요.', 'error');
+            return false;
+        }
+
+        // 상태 메시지 업데이트
+        function updateStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // 구글 시트 데이터 가져오기
+        async function fetchBirthdayData() {
+            try {
+                updateStatus('생일 데이터를 확인하는 중...', 'loading');
+                
+                // 백엔드 서버에서 데이터 가져오기
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || '데이터를 가져올 수 없습니다.');
+                }
+                
+                return data.birthdays;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus('❌ ' + error.message, 'error');
+                return null;
+            }
+        }
+
+        // 생일 알림 표시
+        function showBirthdayNotification(names) {
+            if (names.length === 0) {
+                return;
+            }
+
+            const message = names.map(name => `오늘은 ${name}님의 생일입니다! 🎂🎊`).join('\n');
+            
+            // 브라우저 알림
+            if (Notification.permission === 'granted') {
+                new Notification('🎉 오늘의 생일자 🎉', {
+                    body: message,
+                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎂</text></svg>',
+                    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎂</text></svg>',
+                    vibrate: [200, 100, 200]
+                });
+            }
+        }
+
+        // 생일 카드 표시
+        function displayBirthdayCards(names) {
+            const listEl = document.getElementById('birthdayList');
+            listEl.innerHTML = '';
+            
+            if (names.length === 0) {
+                listEl.innerHTML = '<div class="no-birthday">🎈 오늘은 생일인 분이 없습니다.</div>';
+                updateStatus('생일 확인 완료!', 'success');
+                return;
+            }
+            
+            names.forEach(name => {
+                const card = document.createElement('div');
+                card.className = 'birthday-card';
+                card.innerHTML = `
+                    <div class="name">🎉 ${name}님</div>
+                    <div class="message">오늘은 생일입니다! 🎂🎊</div>
+                `;
+                listEl.appendChild(card);
+            });
+            
+            updateStatus(`🎉 오늘의 생일자: ${names.length}명`, 'success');
+            showBirthdayNotification(names);
+        }
+
+        // 생일 확인 버튼 클릭
+        document.getElementById('checkBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('checkBtn');
+            btn.disabled = true;
+            
+            const birthdayPeople = await fetchBirthdayData();
+            
+            if (birthdayPeople !== null) {
+                displayBirthdayCards(birthdayPeople);
+            }
+            
+            btn.disabled = false;
+        });
+
+        // 초기화
+        async function init() {
+            notificationPermission = await requestNotificationPermission();
+            
+            const btn = document.getElementById('checkBtn');
+            btn.disabled = false;
+            
+            // 자동으로 생일 확인
+            const birthdayPeople = await fetchBirthdayData();
+            if (birthdayPeople !== null) {
+                displayBirthdayCards(birthdayPeople);
+            }
+            
+            // 매일 자동 확인 (24시간마다)
+            setInterval(async () => {
+                const birthdayPeople = await fetchBirthdayData();
+                if (birthdayPeople !== null && birthdayPeople.length > 0) {
+                    displayBirthdayCards(birthdayPeople);
+                }
+            }, 24 * 60 * 60 * 1000);
+        }
+
+        // 페이지 로드 시 초기화
+        init();
+    </script>
+</body>
+</html>
