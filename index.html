@@ -106,7 +106,7 @@
         }
 
         .birthday-card {
-            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            background: linear-gradient(135deg, #ffc9c9 0%, #ff8787 100%);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 15px;
@@ -153,7 +153,7 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
         .btn:active {
@@ -164,6 +164,18 @@
             background: #ccc;
             cursor: not-allowed;
             transform: none;
+        }
+        
+        .btn-birthday {
+            background: linear-gradient(135deg, #ff8787 0%, #fa5252 100%);
+        }
+        
+        .btn-nonpayment {
+            background: linear-gradient(135deg, #63e6be 0%, #20c997 100%);
+        }
+        
+        .btn-exclude {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
         }
 
         .info {
@@ -221,7 +233,7 @@
 
         <!-- 탭 메뉴 -->
         <div style="display: flex; gap: 5px; margin-bottom: 20px;">
-            <button class="tab-btn active" data-tab="birthday" style="flex: 1; padding: 12px; border: none; background: #667eea; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            <button class="tab-btn active" data-tab="birthday" style="flex: 1; padding: 12px; border: none; background: #fa5252; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">
                 🎂 생일
             </button>
             <button class="tab-btn" data-tab="nonpayment" style="flex: 1; padding: 12px; border: none; background: #ddd; color: #666; border-radius: 8px; cursor: pointer; font-weight: bold;">
@@ -234,19 +246,19 @@
 
         <!-- 생일 탭 -->
         <div id="birthdayTab" class="tab-content">
-            <button id="checkBtn" class="btn" disabled>생일 확인하기</button>
+            <button id="checkBtn" class="btn btn-birthday" disabled>생일 확인하기</button>
             <div id="birthdayList" class="birthday-list"></div>
         </div>
 
         <!-- 회비 미납 탭 -->
         <div id="nonpaymentTab" class="tab-content" style="display: none;">
-            <button id="checkNonpaymentBtn" class="btn">회비 미납자 확인</button>
+            <button id="checkNonpaymentBtn" class="btn btn-nonpayment">회비 미납자 확인</button>
             <div id="nonpaymentList" class="birthday-list"></div>
         </div>
 
         <!-- 방출 예정 탭 -->
         <div id="excludeTab" class="tab-content" style="display: none;">
-            <button id="checkExcludeBtn" class="btn">방출 예정자 확인</button>
+            <button id="checkExcludeBtn" class="btn btn-exclude">방출 예정자 확인</button>
             <div id="excludeList" class="birthday-list"></div>
         </div>
 
@@ -256,7 +268,7 @@
             
             <!-- 생일 알림 설정 -->
             <div id="birthdaySettings" class="settings-section">
-                <div style="font-weight: bold; margin-bottom: 10px; color: #667eea;">🎂 생일 알림 (매일)</div>
+                <div style="font-weight: bold; margin-bottom: 10px; color: #fa5252;">🎂 생일 알림 (매일)</div>
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                     <span style="font-size: 14px;">시간:</span>
                     <input type="number" id="birthdayHour" min="0" max="23" value="9" 
@@ -264,23 +276,24 @@
                     <span>:</span>
                     <input type="number" id="birthdayMinute" min="0" max="59" value="0" 
                            style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
-                    <button id="setBirthdayBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                    <button id="setBirthdayBtn" class="btn btn-birthday" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
                 </div>
                 <div style="font-size: 12px; color: #666;">
                     현재: <span id="currentBirthdayTime" style="font-weight: bold;">매일 09:00</span>
                 </div>
             </div>
 
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-
             <!-- 회비 미납 알림 설정 -->
             <div id="nonpaymentSettings" class="settings-section" style="display: none;">
-                <div style="font-weight: bold; margin-bottom: 10px; color: #fdcb6e;">💰 회비 미납 알림</div>
+                <div style="font-weight: bold; margin-bottom: 10px; color: #20c997;">💰 회비 미납 알림</div>
+                
+                <!-- 1. 날짜 -->
                 <div style="margin-bottom: 10px;">
-                    <span style="font-size: 14px;">날짜 (쉼표로 구분):</span>
+                    <span style="font-size: 14px;">📅 날짜 (쉼표로 구분):</span>
                     <input type="text" id="nonpaymentDays" value="1,5,10" placeholder="예: 1,5,10"
                            style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
                 </div>
+                
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                     <span style="font-size: 14px;">시간:</span>
                     <input type="number" id="nonpaymentHour" min="0" max="23" value="9" 
@@ -288,23 +301,38 @@
                     <span>:</span>
                     <input type="number" id="nonpaymentMinute" min="0" max="59" value="0" 
                            style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
-                    <button id="setNonpaymentBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                    <button id="setNonpaymentBtn" class="btn btn-nonpayment" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
                 </div>
+                
+                <!-- 2. 사전 알림 -->
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 14px;">📢 사전 알림 (시트 업데이트):</span>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                        <input type="number" id="nonpaymentPreHours" min="1" max="72" value="24" 
+                               style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                        <span style="font-size: 14px;">시간 전</span>
+                    </div>
+                    <div style="font-size: 11px; color: #999; margin-top: 3px;">
+                        알림 시간 전에 시트 업데이트 알림
+                    </div>
+                </div>
+                
                 <div style="font-size: 12px; color: #666;">
                     현재: <span id="currentNonpaymentTime" style="font-weight: bold;">매월 1,5,10일 09:00</span>
                 </div>
             </div>
 
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-
             <!-- 방출 예정 알림 설정 -->
             <div id="excludeSettings" class="settings-section" style="display: none;">
-                <div style="font-weight: bold; margin-bottom: 10px; color: #d63031;">⚠️ 방출 예정 알림</div>
+                <div style="font-weight: bold; margin-bottom: 10px; color: #8b5cf6;">⚠️ 방출 예정 알림</div>
+                
+                <!-- 1. 날짜 -->
                 <div style="margin-bottom: 10px;">
-                    <span style="font-size: 14px;">날짜 (쉼표로 구분, 말일은 'last'):</span>
+                    <span style="font-size: 14px;">📅 날짜 (쉼표로 구분, 말일은 'last'):</span>
                     <input type="text" id="excludeDays" value="1,10,20,last" placeholder="예: 1,10,20,last"
                            style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
                 </div>
+                
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                     <span style="font-size: 14px;">시간:</span>
                     <input type="number" id="excludeHour" min="0" max="23" value="9" 
@@ -312,39 +340,53 @@
                     <span>:</span>
                     <input type="number" id="excludeMinute" min="0" max="59" value="0" 
                            style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
-                    <button id="setExcludeBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                    <button id="setExcludeBtn" class="btn btn-exclude" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
                 </div>
+                
+                <!-- 2. 사전 알림 -->
                 <div style="margin-bottom: 10px;">
-                    <span style="font-size: 14px;">제외할 명단 (쉼표로 구분):</span>
+                    <span style="font-size: 14px;">📢 사전 알림 (시트 업데이트):</span>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                        <input type="number" id="excludePreHours" min="1" max="72" value="24" 
+                               style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                        <span style="font-size: 14px;">시간 전</span>
+                    </div>
+                    <div style="font-size: 11px; color: #999; margin-top: 3px;">
+                        알림 시간 전에 시트 업데이트 알림
+                    </div>
+                </div>
+                
+                <!-- 3. 제외 명단 -->
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 14px;">👥 명예회원 등 제외 명단:</span>
                     <input type="text" id="excludeNamesSettings" value="신예슬, 이태욱, 최연주, 전해인, 김현우, 고준호" placeholder="예: 신예슬, 이태욱"
                            style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
                     <div style="font-size: 11px; color: #999; margin-top: 3px;">
-                        출석체크 시 제외되는 사람들의 이름
+                        출석체크 시 제외되는 사람들의 이름 (쉼표로 구분)
                     </div>
                 </div>
+                
                 <div style="font-size: 12px; color: #666;">
                     현재: <span id="currentExcludeTime" style="font-weight: bold;">매월 1,10,20,말일 09:00</span>
                 </div>
             </div>
 
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-
             <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">🔔 즉시 테스트</div>
             
             <div id="birthdayTest" style="margin-bottom: 10px;">
-                <button id="testBirthdayBtn" class="btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); font-size: 14px; padding: 10px;">
+                <button id="testBirthdayBtn" class="btn btn-birthday" style="font-size: 14px; padding: 10px;">
                     🎂 생일 알림 테스트
                 </button>
             </div>
 
             <div id="nonpaymentTest" style="margin-bottom: 10px; display: none;">
-                <button id="testNonpaymentBtn" class="btn" style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); font-size: 14px; padding: 10px;">
+                <button id="testNonpaymentBtn" class="btn btn-nonpayment" style="font-size: 14px; padding: 10px;">
                     💰 회비 알림 테스트
                 </button>
             </div>
 
             <div id="excludeTest" style="display: none;">
-                <button id="testExcludeBtn" class="btn" style="background: linear-gradient(135deg, #ff7675 0%, #d63031 100%); font-size: 14px; padding: 10px;">
+                <button id="testExcludeBtn" class="btn btn-exclude" style="font-size: 14px; padding: 10px;">
                     ⚠️ 방출 알림 테스트
                 </button>
             </div>
@@ -354,8 +396,25 @@
             💡 <strong>자동 알림 활용 방법</strong><br><br>
             <div style="text-align: left; font-size: 13px; line-height: 1.6;">
                 <strong>🎂 생일 알림:</strong> 매일 설정한 시간에 자동으로 생일자를 확인하여 알림을 보냅니다.<br><br>
-                <strong>💰 회비 알림:</strong> 매월 설정한 날짜(예: 1일, 5일, 10일)에 회비 미납자를 확인하여 알림을 보냅니다. 독촉이 필요한 날짜를 자유롭게 설정하세요.<br><br>
-                <strong>⚠️ 방출 알림:</strong> 매월 설정한 날짜(예: 1일, 10일, 20일, 말일)에 연속 불참자를 확인하여 알림을 보냅니다. 경고가 필요한 시점을 설정하세요.
+                <strong>💰 회비 알림:</strong> 매월 설정한 날짜(예: 1일, 5일, 10일)에 회비 미납자를 확인하여 알림을 보냅니다. 사전 알림을 설정하면 알림 전에 시트 업데이트를 독촉합니다.<br><br>
+                <strong>⚠️ 방출 알림:</strong> 매월 설정한 날짜(예: 1일, 10일, 20일, 말일)에 연속 불참자를 확인하여 알림을 보냅니다. 사전 알림을 설정하면 알림 전에 시트 업데이트를 독촉합니다.<br><br>
+                
+                <hr style="margin: 10px 0; border: none; border-top: 1px solid #ddd;">
+                
+                <strong>📱 알림 설정 방법</strong><br><br>
+                <strong>🤖 Android (Chrome):</strong><br>
+                1. 홈 화면에 앱 추가: Chrome 메뉴 → "홈 화면에 추가"<br>
+                2. 알림 권한 허용: 설정 → 앱 → Chrome → 알림 → 허용<br>
+                3. 배터리 최적화 제외 (권장): 설정 → 배터리 → Chrome → 최적화 안 함<br><br>
+                
+                <strong>🍎 iOS (Safari):</strong><br>
+                1. 홈 화면에 앱 추가: 공유 버튼 → "홈 화면에 추가"<br>
+                2. 알림 권한 허용: 설정 → Safari → 알림 → 허용<br>
+                3. iOS 16.4 이상 필요 (Web Push 지원)<br><br>
+                
+                <div style="font-size: 11px; color: #999;">
+                    ※ 화면이 꺼져 있어도 알림을 받을 수 있습니다!
+                </div>
             </div>
         </div>
 
@@ -570,12 +629,17 @@
                 document.getElementById('nonpaymentTest').style.display = 'none';
                 document.getElementById('excludeTest').style.display = 'none';
                 
-                // 선택한 탭 활성화
-                btn.style.background = '#667eea';
+                // 선택한 탭 활성화 (각 탭별 색상)
+                const tab = btn.dataset.tab;
+                const tabColors = {
+                    'birthday': '#fa5252',    // 붉은색 (밝고 선명)
+                    'nonpayment': '#20c997',  // 청록색 (세련됨)
+                    'exclude': '#8b5cf6'      // 보라색 (부드러움)
+                };
+                btn.style.background = tabColors[tab];
                 btn.style.color = 'white';
                 btn.classList.add('active');
                 
-                const tab = btn.dataset.tab;
                 document.getElementById(tab + 'Tab').style.display = 'block';
                 
                 // 해당 탭의 설정 섹션 표시
@@ -619,7 +683,7 @@
                     if (data.previous_names && data.previous_names.length > 0) {
                         const card = document.createElement('div');
                         card.className = 'birthday-card';
-                        card.style.background = 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)';
+                        card.style.background = 'linear-gradient(135deg, #96f2d7 0%, #63e6be 100%)';
                         card.innerHTML = `
                             <div class="name">💰 ${data.previous_month} 회비 미납</div>
                             <div class="message">${data.previous_names.join(', ')}</div>
@@ -630,7 +694,7 @@
                     if (data.current_names && data.current_names.length > 0) {
                         const card = document.createElement('div');
                         card.className = 'birthday-card';
-                        card.style.background = 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)';
+                        card.style.background = 'linear-gradient(135deg, #63e6be 0%, #20c997 100%)';
                         card.innerHTML = `
                             <div class="name">💰 ${data.current_month} 회비 미납</div>
                             <div class="message">${data.current_names.join(', ')}</div>
@@ -672,7 +736,7 @@
                 if (result.success && result.data && result.data.names && result.data.names.length > 0) {
                     const card = document.createElement('div');
                     card.className = 'birthday-card';
-                    card.style.background = 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)';
+                    card.style.background = 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)';
                     card.innerHTML = `
                         <div class="name">⚠️ ${result.data.month} 방출 예정</div>
                         <div class="message">${result.data.names.join('<br>')}</div>
@@ -729,6 +793,7 @@
             const daysStr = document.getElementById('nonpaymentDays').value;
             const hour = parseInt(document.getElementById('nonpaymentHour').value);
             const minute = parseInt(document.getElementById('nonpaymentMinute').value);
+            const preHours = parseInt(document.getElementById('nonpaymentPreHours').value);
             
             const days = daysStr.split(',').map(d => {
                 const trimmed = d.trim();
@@ -740,13 +805,18 @@
                 return;
             }
             
+            if (preHours < 1 || preHours > 72) {
+                alert('사전 알림은 1~72시간 사이로 설정하세요');
+                return;
+            }
+            
             try {
                 const response = await fetch(window.location.origin + '/api/set-notification-settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ type: 'nonpayment', days, hour, minute })
+                    body: JSON.stringify({ type: 'nonpayment', days, hour, minute, pre_hours: preHours })
                 });
                 
                 const data = await response.json();
@@ -768,6 +838,7 @@
             const daysStr = document.getElementById('excludeDays').value;
             const hour = parseInt(document.getElementById('excludeHour').value);
             const minute = parseInt(document.getElementById('excludeMinute').value);
+            const preHours = parseInt(document.getElementById('excludePreHours').value);
             
             const days = daysStr.split(',').map(d => {
                 const trimmed = d.trim();
@@ -783,13 +854,18 @@
                 return;
             }
             
+            if (preHours < 1 || preHours > 72) {
+                alert('사전 알림은 1~72시간 사이로 설정하세요');
+                return;
+            }
+            
             try {
                 const response = await fetch(window.location.origin + '/api/set-notification-settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ type: 'exclude', days, hour, minute, exclude_names: excludeNamesList })
+                    body: JSON.stringify({ type: 'exclude', days, hour, minute, exclude_names: excludeNamesList, pre_hours: preHours })
                 });
                 
                 const data = await response.json();
@@ -872,6 +948,7 @@
                     document.getElementById('nonpaymentDays').value = settings.nonpayment.days.join(',');
                     document.getElementById('nonpaymentHour').value = settings.nonpayment.hour;
                     document.getElementById('nonpaymentMinute').value = settings.nonpayment.minute;
+                    document.getElementById('nonpaymentPreHours').value = settings.nonpayment.pre_hours || 24;
                     document.getElementById('currentNonpaymentTime').textContent = 
                         `매월 ${settings.nonpayment.days.join(',')}일 ${String(settings.nonpayment.hour).padStart(2, '0')}:${String(settings.nonpayment.minute).padStart(2, '0')}`;
                     
@@ -879,6 +956,7 @@
                     document.getElementById('excludeDays').value = settings.exclude.days.join(',');
                     document.getElementById('excludeHour').value = settings.exclude.hour;
                     document.getElementById('excludeMinute').value = settings.exclude.minute;
+                    document.getElementById('excludePreHours').value = settings.exclude.pre_hours || 24;
                     document.getElementById('currentExcludeTime').textContent = 
                         `매월 ${settings.exclude.days.join(',')}일 ${String(settings.exclude.hour).padStart(2, '0')}:${String(settings.exclude.minute).padStart(2, '0')}`;
                     

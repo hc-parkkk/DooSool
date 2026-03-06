@@ -246,11 +246,27 @@ def monthly_exclude_check():
     else:
         print("방출 예정자가 없습니다.")
 
+# 회비 미납 사전 알림 (시트 업데이트 독촉)
+def nonpayment_pre_reminder():
+    print(f"[{datetime.now()}] 회비 미납 사전 알림 시작...")
+    pre_hours = notification_settings['nonpayment'].get('pre_hours', 24)
+    message = f"📢 회비 미납 알림 예정!\n\n{pre_hours}시간 후에 회비 미납자 알림이 발송됩니다.\n구글 시트를 업데이트해주세요! 📊"
+    send_push_notifications("💰 회비 시트 업데이트 알림", message)
+    print(f"회비 사전 알림 전송 완료 ({pre_hours}시간 전)")
+
+# 방출 예정 사전 알림 (시트 업데이트 독촉)
+def exclude_pre_reminder():
+    print(f"[{datetime.now()}] 방출 예정 사전 알림 시작...")
+    pre_hours = notification_settings['exclude'].get('pre_hours', 24)
+    message = f"📢 방출 예정 알림 예정!\n\n{pre_hours}시간 후에 방출 예정자 알림이 발송됩니다.\n구글 시트를 업데이트해주세요! 📊"
+    send_push_notifications("⚠️ 출석 시트 업데이트 알림", message)
+    print(f"방출 사전 알림 전송 완료 ({pre_hours}시간 전)")
+
 # 알림 시간 설정
 notification_settings = {
     'birthday': {'hour': 9, 'minute': 0},  # 생일: 매일 09:00
-    'nonpayment': {'days': [1, 5, 10], 'hour': 9, 'minute': 0},  # 회비: 매월 1,5,10일 09:00
-    'exclude': {'days': [1, 10, 20, 'last'], 'hour': 9, 'minute': 0, 'exclude_names': ['신예슬', '이태욱', '최연주', '전해인', '김현우', '고준호']}  # 방출: 매월 1,10,20,말일 09:00
+    'nonpayment': {'days': [1, 5, 10], 'hour': 9, 'minute': 0, 'pre_hours': 24},  # 회비: 매월 1,5,10일 09:00, 24시간 전 사전 알림
+    'exclude': {'days': [1, 10, 20, 'last'], 'hour': 9, 'minute': 0, 'pre_hours': 24, 'exclude_names': ['신예슬', '이태욱', '최연주', '전해인', '김현우', '고준호']}  # 방출: 매월 1,10,20,말일 09:00, 24시간 전 사전 알림
 }
 
 # 스케줄러 설정
@@ -305,9 +321,37 @@ def update_schedule():
         id="exclude_check"
     )
     
+    # 2-1. 회비 미납 사전 알림 (N시간 전)
+    pre_hours = nonpayment_settings.get('pre_hours', 24)
+    pre_hour = (nonpayment_settings['hour'] - pre_hours) % 24
+    scheduler.add_job(
+        func=nonpayment_pre_reminder,
+        trigger="cron",
+        day=days_str,
+        hour=pre_hour,
+        minute=nonpayment_settings['minute'],
+        timezone="Asia/Seoul",
+        id="nonpayment_pre_reminder"
+    )
+    
+    # 3-1. 방출 예정 사전 알림 (N시간 전)
+    pre_hours_exclude = exclude_settings.get('pre_hours', 24)
+    pre_hour_exclude = (exclude_settings['hour'] - pre_hours_exclude) % 24
+    scheduler.add_job(
+        func=exclude_pre_reminder,
+        trigger="cron",
+        day=days_str,
+        hour=pre_hour_exclude,
+        minute=exclude_settings['minute'],
+        timezone="Asia/Seoul",
+        id="exclude_pre_reminder"
+    )
+    
     print(f"⏰ 생일 알림: 매일 {birthday_settings['hour']:02d}:{birthday_settings['minute']:02d}")
     print(f"💰 회비 미납 알림: 매월 {','.join(map(str, nonpayment_settings['days']))}일 {nonpayment_settings['hour']:02d}:{nonpayment_settings['minute']:02d}")
+    print(f"📢 회비 사전 알림: 매월 {','.join(map(str, nonpayment_settings['days']))}일 {pre_hour:02d}:{nonpayment_settings['minute']:02d} ({pre_hours}시간 전)")
     print(f"⚠️  방출 예정 알림: 매월 {','.join(map(str, exclude_settings['days']))}일 {exclude_settings['hour']:02d}:{exclude_settings['minute']:02d}")
+    print(f"📢 방출 사전 알림: 매월 {','.join(map(str, exclude_settings['days']))}일 {pre_hour_exclude:02d}:{exclude_settings['minute']:02d} ({pre_hours_exclude}시간 전)")
 
 # 초기 스케줄 설정
 update_schedule()
@@ -465,6 +509,11 @@ def set_notification_settings():
         notification_settings[notification_type]['days'] = days
         notification_settings[notification_type]['hour'] = hour
         notification_settings[notification_type]['minute'] = minute
+        
+        # 사전 알림 시간 저장
+        pre_hours = data.get('pre_hours')
+        if pre_hours is not None:
+            notification_settings[notification_type]['pre_hours'] = pre_hours
         
         # 방출 예정의 경우 제외 명단도 저장
         if notification_type == 'exclude':
