@@ -84,12 +84,13 @@ def check_nonpayment():
     try:
         sheet = client.open_by_key(spreadsheet_id).worksheet("회비")
         all_data = sheet.get_all_values()
-        df = pd.DataFrame(all_data[1:], columns=all_data[0])
         
-        # B열부터 D열(1~3)과 34번째 열부터 46번째 열까지 선택
-        df_filtered = pd.concat([df.iloc[3:, 1:4], df.iloc[3:, 34:46]], axis=1)
-        df_filtered.columns = df_filtered.iloc[0]
-        df_filtered = df_filtered[1:].reset_index(drop=True)
+        # 5행(인덱스 4)이 실제 헤더
+        # B열부터 D열(1~3)과 34번째 열부터 46번째 열(33~45) 선택
+        df_filtered = pd.concat([
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 1:4],
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 33:46]
+        ], axis=1)
         
         # 현재 날짜 기준 이번 달과 지난 달
         today = datetime.now()
@@ -99,9 +100,17 @@ def check_nonpayment():
         current_month_str = f"{current_month}월"
         previous_month_str = f"{previous_month}월"
         
-        # 이번 달과 지난 달 미납자
-        current_absent = df_filtered[df_filtered[current_month_str] != 'O']
-        previous_absent = df_filtered[df_filtered[previous_month_str] != 'O']
+        # 이번 달과 지난 달 미납자 (빈 값도 미납으로 처리)
+        current_absent = df_filtered[
+            (df_filtered[current_month_str] != 'O') & 
+            (df_filtered['이름'].notna()) & 
+            (df_filtered['이름'] != '')
+        ]
+        previous_absent = df_filtered[
+            (df_filtered[previous_month_str] != 'O') & 
+            (df_filtered['이름'].notna()) & 
+            (df_filtered['이름'] != '')
+        ]
         
         current_names = current_absent['이름'].tolist()
         previous_names = previous_absent['이름'].tolist()
@@ -114,6 +123,8 @@ def check_nonpayment():
         }
     except Exception as e:
         print(f"회비 미납자 확인 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 # 방출 예정자 확인 함수
@@ -121,12 +132,13 @@ def check_exclude_members():
     try:
         sheet = client.open_by_key(spreadsheet_id).worksheet("출석체크")
         all_data = sheet.get_all_values()
-        df = pd.DataFrame(all_data[1:], columns=all_data[0])
         
-        # B열부터 F열(1~5)과 33번째 열부터 45번째 열까지 선택
-        df_filtered = pd.concat([df.iloc[3:, 1:6], df.iloc[3:, 33:45]], axis=1)
-        df_filtered.columns = df_filtered.iloc[0]
-        df_filtered = df_filtered[1:].reset_index(drop=True)
+        # 5행(인덱스 4)이 실제 헤더
+        # B열부터 F열(1~5)과 33번째 열부터 45번째 열(32~44) 선택
+        df_filtered = pd.concat([
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 1:6],
+            pd.DataFrame(all_data[5:], columns=all_data[4]).iloc[:, 32:45]
+        ], axis=1)
         
         # 현재 날짜 기준 이번 달과 지난 달
         today = datetime.now()
@@ -145,6 +157,8 @@ def check_exclude_members():
             (df_filtered[previous_month_str] != 'O') &
             (df_filtered[current_month_str] != '신입') &
             (df_filtered[previous_month_str] != '신입') &
+            (df_filtered['이름'].notna()) &
+            (df_filtered['이름'] != '') &
             (~df_filtered['이름'].isin(exclude_names))
         ]
         
@@ -156,6 +170,8 @@ def check_exclude_members():
         }
     except Exception as e:
         print(f"방출 예정자 확인 오류: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 # 푸시 알림 전송
@@ -230,9 +246,12 @@ def monthly_exclude_check():
     else:
         print("방출 예정자가 없습니다.")
 
-# 알림 시간 설정 (기본값: 오전 9시)
-notification_hour = 9
-notification_minute = 0
+# 알림 시간 설정
+notification_settings = {
+    'birthday': {'hour': 9, 'minute': 0},  # 생일: 매일 09:00
+    'nonpayment': {'days': [1, 5, 10], 'hour': 9, 'minute': 0},  # 회비: 매월 1,5,10일 09:00
+    'exclude': {'days': [1, 10, 20, 'last'], 'hour': 9, 'minute': 0}  # 방출: 매월 1,10,20,말일 09:00
+}
 
 # 스케줄러 설정
 scheduler = BackgroundScheduler()
@@ -244,40 +263,51 @@ def update_schedule():
     scheduler.remove_all_jobs()
     
     # 1. 생일 알림 (매일 설정한 시간)
+    birthday_settings = notification_settings['birthday']
     scheduler.add_job(
         func=daily_birthday_check,
         trigger="cron",
-        hour=notification_hour,
-        minute=notification_minute,
+        hour=birthday_settings['hour'],
+        minute=birthday_settings['minute'],
         timezone="Asia/Seoul",
         id="birthday_check"
     )
     
-    # 2. 회비 미납자 알림 (매월 1일, 5일, 10일 오전 9시)
+    # 2. 회비 미납자 알림
+    nonpayment_settings = notification_settings['nonpayment']
+    days_str = ','.join(map(str, nonpayment_settings['days']))
     scheduler.add_job(
         func=monthly_nonpayment_check,
         trigger="cron",
-        day="1,5,10",
-        hour=9,
-        minute=0,
+        day=days_str,
+        hour=nonpayment_settings['hour'],
+        minute=nonpayment_settings['minute'],
         timezone="Asia/Seoul",
         id="nonpayment_check"
     )
     
-    # 3. 방출 예정자 알림 (매월 1일, 10일, 20일, 말일 오전 9시)
+    # 3. 방출 예정자 알림
+    exclude_settings = notification_settings['exclude']
+    days_list = []
+    for day in exclude_settings['days']:
+        if day == 'last':
+            days_list.append('last')
+        else:
+            days_list.append(str(day))
+    days_str = ','.join(days_list)
     scheduler.add_job(
         func=monthly_exclude_check,
         trigger="cron",
-        day="1,10,20,last",
-        hour=9,
-        minute=0,
+        day=days_str,
+        hour=exclude_settings['hour'],
+        minute=exclude_settings['minute'],
         timezone="Asia/Seoul",
         id="exclude_check"
     )
     
-    print(f"⏰ 생일 알림: 매일 {notification_hour:02d}:{notification_minute:02d}")
-    print(f"💰 회비 미납 알림: 매월 1, 5, 10일 09:00")
-    print(f"⚠️  방출 예정 알림: 매월 1, 10, 20, 말일 09:00")
+    print(f"⏰ 생일 알림: 매일 {birthday_settings['hour']:02d}:{birthday_settings['minute']:02d}")
+    print(f"💰 회비 미납 알림: 매월 {','.join(map(str, nonpayment_settings['days']))}일 {nonpayment_settings['hour']:02d}:{nonpayment_settings['minute']:02d}")
+    print(f"⚠️  방출 예정 알림: 매월 {','.join(map(str, exclude_settings['days']))}일 {exclude_settings['hour']:02d}:{exclude_settings['minute']:02d}")
 
 # 초기 스케줄 설정
 update_schedule()
@@ -385,39 +415,72 @@ def get_exclude_members():
             "error": str(e)
         }), 500
 
-# 알림 시간 설정
-@app.route('/api/set-notification-time', methods=['POST'])
-def set_notification_time():
-    global notification_hour, notification_minute
+# 알림 설정 저장
+@app.route('/api/set-notification-settings', methods=['POST'])
+def set_notification_settings():
+    global notification_settings
     
     data = request.json
-    hour = data.get('hour', 9)
-    minute = data.get('minute', 0)
+    notification_type = data.get('type')  # 'birthday', 'nonpayment', 'exclude'
     
-    # 유효성 검사
-    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-        return jsonify({"success": False, "message": "잘못된 시간 형식입니다"}), 400
+    if notification_type not in notification_settings:
+        return jsonify({"success": False, "message": "잘못된 알림 타입입니다"}), 400
     
-    notification_hour = hour
-    notification_minute = minute
+    if notification_type == 'birthday':
+        # 생일은 시간만 설정
+        hour = data.get('hour', 9)
+        minute = data.get('minute', 0)
+        
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            return jsonify({"success": False, "message": "잘못된 시간 형식입니다"}), 400
+        
+        notification_settings['birthday']['hour'] = hour
+        notification_settings['birthday']['minute'] = minute
+        
+        update_schedule()
+        
+        return jsonify({
+            "success": True,
+            "message": f"생일 알림 시간이 {hour:02d}:{minute:02d}로 설정되었습니다"
+        })
     
-    # 스케줄 업데이트
-    update_schedule()
-    
-    return jsonify({
-        "success": True,
-        "message": f"알림 시간이 {hour:02d}:{minute:02d}로 설정되었습니다",
-        "hour": hour,
-        "minute": minute
-    })
+    else:
+        # 회비/방출은 날짜와 시간 모두 설정
+        days = data.get('days', [])
+        hour = data.get('hour', 9)
+        minute = data.get('minute', 0)
+        
+        if not days or not isinstance(days, list):
+            return jsonify({"success": False, "message": "날짜를 입력하세요"}), 400
+        
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            return jsonify({"success": False, "message": "잘못된 시간 형식입니다"}), 400
+        
+        # 날짜 유효성 검사
+        for day in days:
+            if day != 'last' and (not isinstance(day, int) or not (1 <= day <= 31)):
+                return jsonify({"success": False, "message": "잘못된 날짜 형식입니다"}), 400
+        
+        notification_settings[notification_type]['days'] = days
+        notification_settings[notification_type]['hour'] = hour
+        notification_settings[notification_type]['minute'] = minute
+        
+        update_schedule()
+        
+        type_name = "회비 미납" if notification_type == 'nonpayment' else "방출 예정"
+        days_str = ','.join(map(str, days))
+        
+        return jsonify({
+            "success": True,
+            "message": f"{type_name} 알림이 매월 {days_str}일 {hour:02d}:{minute:02d}로 설정되었습니다"
+        })
 
-# 현재 알림 시간 조회
-@app.route('/api/get-notification-time', methods=['GET'])
-def get_notification_time():
+# 현재 알림 설정 조회
+@app.route('/api/get-notification-settings', methods=['GET'])
+def get_notification_settings():
     return jsonify({
         "success": True,
-        "hour": notification_hour,
-        "minute": notification_minute
+        "settings": notification_settings
     })
 
 # 수동 알림 테스트 (즉시 전송)

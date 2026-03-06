@@ -232,20 +232,76 @@
 
         <!-- 알림 설정 -->
         <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-radius: 10px;">
-            <h3 style="margin-bottom: 15px; font-size: 18px; color: #333;">⏰ 알림 시간 설정</h3>
+            <h3 style="margin-bottom: 15px; font-size: 18px; color: #333;">⏰ 알림 설정</h3>
             
-            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                <input type="number" id="hourInput" min="0" max="23" value="9" 
-                       style="width: 60px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; text-align: center;">
-                <span style="font-size: 18px; font-weight: bold;">:</span>
-                <input type="number" id="minuteInput" min="0" max="59" value="0" 
-                       style="width: 60px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; text-align: center;">
-                <button id="setTimeBtn" class="btn" style="width: auto; padding: 10px 20px; margin: 0;">설정</button>
+            <!-- 생일 알림 설정 -->
+            <div id="birthdaySettings" class="settings-section">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #667eea;">🎂 생일 알림 (매일)</div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 14px;">시간:</span>
+                    <input type="number" id="birthdayHour" min="0" max="23" value="9" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <span>:</span>
+                    <input type="number" id="birthdayMinute" min="0" max="59" value="0" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <button id="setBirthdayBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    현재: <span id="currentBirthdayTime" style="font-weight: bold;">매일 09:00</span>
+                </div>
             </div>
-            
-            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
-                현재 설정: <span id="currentTime" style="font-weight: bold; color: #667eea;">09:00</span>
+
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+
+            <!-- 회비 미납 알림 설정 -->
+            <div id="nonpaymentSettings" class="settings-section" style="display: none;">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #fdcb6e;">💰 회비 미납 알림</div>
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 14px;">날짜 (쉼표로 구분):</span>
+                    <input type="text" id="nonpaymentDays" value="1,5,10" placeholder="예: 1,5,10"
+                           style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 14px;">시간:</span>
+                    <input type="number" id="nonpaymentHour" min="0" max="23" value="9" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <span>:</span>
+                    <input type="number" id="nonpaymentMinute" min="0" max="59" value="0" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <button id="setNonpaymentBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    현재: <span id="currentNonpaymentTime" style="font-weight: bold;">매월 1,5,10일 09:00</span>
+                </div>
             </div>
+
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+
+            <!-- 방출 예정 알림 설정 -->
+            <div id="excludeSettings" class="settings-section" style="display: none;">
+                <div style="font-weight: bold; margin-bottom: 10px; color: #d63031;">⚠️ 방출 예정 알림</div>
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 14px;">날짜 (쉼표로 구분, 말일은 'last'):</span>
+                    <input type="text" id="excludeDays" value="1,10,20,last" placeholder="예: 1,10,20,last"
+                           style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 14px;">시간:</span>
+                    <input type="number" id="excludeHour" min="0" max="23" value="9" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <span>:</span>
+                    <input type="number" id="excludeMinute" min="0" max="59" value="0" 
+                           style="width: 60px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <button id="setExcludeBtn" class="btn" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">설정</button>
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    현재: <span id="currentExcludeTime" style="font-weight: bold;">매월 1,10,20,말일 09:00</span>
+                </div>
+            </div>
+
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+
+            <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">🔔 즉시 테스트</div>
             
             <div style="display: flex; gap: 5px;">
                 <button id="testBirthdayBtn" class="btn" style="flex: 1; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); font-size: 14px; padding: 10px;">
@@ -470,6 +526,9 @@
                 });
                 document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
                 
+                // 설정 섹션 숨기기
+                document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+                
                 // 선택한 탭 활성화
                 btn.style.background = '#667eea';
                 btn.style.color = 'white';
@@ -477,6 +536,9 @@
                 
                 const tab = btn.dataset.tab;
                 document.getElementById(tab + 'Tab').style.display = 'block';
+                
+                // 해당 탭의 설정 섹션 표시
+                document.getElementById(tab + 'Settings').style.display = 'block';
             });
         });
 
@@ -584,10 +646,10 @@
             btn.textContent = '방출 예정자 확인';
         });
 
-        // 알림 시간 설정
-        document.getElementById('setTimeBtn').addEventListener('click', async () => {
-            const hour = parseInt(document.getElementById('hourInput').value);
-            const minute = parseInt(document.getElementById('minuteInput').value);
+        // 생일 알림 설정
+        document.getElementById('setBirthdayBtn').addEventListener('click', async () => {
+            const hour = parseInt(document.getElementById('birthdayHour').value);
+            const minute = parseInt(document.getElementById('birthdayMinute').value);
             
             if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
                 alert('올바른 시간을 입력하세요 (시: 0-23, 분: 0-59)');
@@ -595,25 +657,103 @@
             }
             
             try {
-                const response = await fetch(window.location.origin + '/api/set-notification-time', {
+                const response = await fetch(window.location.origin + '/api/set-notification-settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ hour, minute })
+                    body: JSON.stringify({ type: 'birthday', hour, minute })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('currentTime').textContent = 
-                        `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    document.getElementById('currentBirthdayTime').textContent = 
+                        `매일 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     updateStatus('✅ ' + data.message, 'success');
                 } else {
                     updateStatus('❌ ' + data.message, 'error');
                 }
             } catch (error) {
-                updateStatus('❌ 시간 설정 실패', 'error');
+                updateStatus('❌ 설정 실패', 'error');
+            }
+        });
+
+        // 회비 미납 알림 설정
+        document.getElementById('setNonpaymentBtn').addEventListener('click', async () => {
+            const daysStr = document.getElementById('nonpaymentDays').value;
+            const hour = parseInt(document.getElementById('nonpaymentHour').value);
+            const minute = parseInt(document.getElementById('nonpaymentMinute').value);
+            
+            const days = daysStr.split(',').map(d => {
+                const trimmed = d.trim();
+                return isNaN(trimmed) ? trimmed : parseInt(trimmed);
+            });
+            
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                alert('올바른 시간을 입력하세요');
+                return;
+            }
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/set-notification-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'nonpayment', days, hour, minute })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('currentNonpaymentTime').textContent = 
+                        `매월 ${daysStr}일 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    updateStatus('✅ ' + data.message, 'success');
+                } else {
+                    updateStatus('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 설정 실패', 'error');
+            }
+        });
+
+        // 방출 예정 알림 설정
+        document.getElementById('setExcludeBtn').addEventListener('click', async () => {
+            const daysStr = document.getElementById('excludeDays').value;
+            const hour = parseInt(document.getElementById('excludeHour').value);
+            const minute = parseInt(document.getElementById('excludeMinute').value);
+            
+            const days = daysStr.split(',').map(d => {
+                const trimmed = d.trim();
+                return trimmed === 'last' ? 'last' : parseInt(trimmed);
+            });
+            
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                alert('올바른 시간을 입력하세요');
+                return;
+            }
+            
+            try {
+                const response = await fetch(window.location.origin + '/api/set-notification-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'exclude', days, hour, minute })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('currentExcludeTime').textContent = 
+                        `매월 ${daysStr}일 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    updateStatus('✅ ' + data.message, 'success');
+                } else {
+                    updateStatus('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 설정 실패', 'error');
             }
         });
 
@@ -664,20 +804,37 @@
             btn.textContent = originalText;
         }
 
-        // 현재 알림 시간 불러오기
-        async function loadNotificationTime() {
+        // 현재 알림 설정 불러오기
+        async function loadNotificationSettings() {
             try {
-                const response = await fetch(window.location.origin + '/api/get-notification-time');
+                const response = await fetch(window.location.origin + '/api/get-notification-settings');
                 const data = await response.json();
                 
-                if (data.success) {
-                    document.getElementById('hourInput').value = data.hour;
-                    document.getElementById('minuteInput').value = data.minute;
-                    document.getElementById('currentTime').textContent = 
-                        `${String(data.hour).padStart(2, '0')}:${String(data.minute).padStart(2, '0')}`;
+                if (data.success && data.settings) {
+                    const settings = data.settings;
+                    
+                    // 생일 설정
+                    document.getElementById('birthdayHour').value = settings.birthday.hour;
+                    document.getElementById('birthdayMinute').value = settings.birthday.minute;
+                    document.getElementById('currentBirthdayTime').textContent = 
+                        `매일 ${String(settings.birthday.hour).padStart(2, '0')}:${String(settings.birthday.minute).padStart(2, '0')}`;
+                    
+                    // 회비 설정
+                    document.getElementById('nonpaymentDays').value = settings.nonpayment.days.join(',');
+                    document.getElementById('nonpaymentHour').value = settings.nonpayment.hour;
+                    document.getElementById('nonpaymentMinute').value = settings.nonpayment.minute;
+                    document.getElementById('currentNonpaymentTime').textContent = 
+                        `매월 ${settings.nonpayment.days.join(',')}일 ${String(settings.nonpayment.hour).padStart(2, '0')}:${String(settings.nonpayment.minute).padStart(2, '0')}`;
+                    
+                    // 방출 설정
+                    document.getElementById('excludeDays').value = settings.exclude.days.join(',');
+                    document.getElementById('excludeHour').value = settings.exclude.hour;
+                    document.getElementById('excludeMinute').value = settings.exclude.minute;
+                    document.getElementById('currentExcludeTime').textContent = 
+                        `매월 ${settings.exclude.days.join(',')}일 ${String(settings.exclude.hour).padStart(2, '0')}:${String(settings.exclude.minute).padStart(2, '0')}`;
                 }
             } catch (error) {
-                console.error('알림 시간 불러오기 실패:', error);
+                console.error('알림 설정 불러오기 실패:', error);
             }
         }
 
@@ -688,8 +845,8 @@
             const btn = document.getElementById('checkBtn');
             btn.disabled = false;
             
-            // 알림 시간 불러오기
-            await loadNotificationTime();
+            // 알림 설정 불러오기
+            await loadNotificationSettings();
             
             // 자동으로 생일 확인
             const birthdayPeople = await fetchBirthdayData();
